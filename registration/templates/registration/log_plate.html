@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Log License Plate</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="container mt-5">
+    <h2 class="text-center">🚦 Log License Plate</h2>
+    
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Number Plate -->
+        <div class="mb-3">
+            <label for="number_plate" class="form-label">Number Plate:</label>
+            <input type="text" name="number_plate" class="form-control" required>
+        </div>
+
+        <!-- Select Junction -->
+        <div class="mb-3">
+            <label for="junction_id" class="form-label">Select Junction:</label>
+            <select name="junction_id" class="form-control" required>
+                <option value="" selected disabled>-- Select a Junction --</option>
+                {% for junction in junctions %}
+                <option value="{{ junction.id }}">{{ junction.name }} - {{ junction.location }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Log Plate</button>
+    </form>
+
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">⬅️ Back to Dashboard</a>
+</body>
+</html>
