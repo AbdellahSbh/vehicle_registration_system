@@ -22,7 +22,18 @@
             <select name="junction_id" class="form-control" required>
                 <option value="" selected disabled>-- Select a Junction --</option>
                 {% for junction in junctions %}
-                <option value="{{ junction.id }}">{{ junction.name }} - {{ junction.location }}</option>
+                <option value="{{ junction.id }}">{{ junction.name }} - {{ junction.city }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Select Violation -->
+        <div class="mb-3">
+            <label for="violation_type" class="form-label">Select Violation:</label>
+            <select name="violation_type" class="form-control" required>
+                <option value="" selected disabled>-- Select a Violation --</option>
+                {% for violation in violations %}
+                <option value="{{ violation.id }}">{{ violation.type }} - €{{ violation.fine_amount }}</option>
                 {% endfor %}
             </select>
         </div>
