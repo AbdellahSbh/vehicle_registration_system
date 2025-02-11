@@ -4,6 +4,8 @@ from .models import Vehicle, LicensePlateLog, Junction, City, Violation
 from .forms import VehicleForm
 from django.contrib import messages
 import logging
+from django.core.mail import send_mail
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,9 @@ def log_plate(request):
             violation = Violation.objects.get(id=violation_id)
 
 
-            LicensePlateLog.objects.create(vehicle=vehicle, junction=junction, violation=violation)
+            vehicle_detection = LicensePlateLog.objects.create(vehicle=vehicle, junction=junction, violation=violation)
+            # if violation and violation.type != "No Violation":
+            send_violation_email(vehicle_detection)
 
             return HttpResponse("✅ Plate Logged Successfully")
 
@@ -54,6 +58,31 @@ def log_plate(request):
 
     return render(request, "registration/log_plate.html", {"junctions": junctions, "violations": violations})
 
+def send_violation_email(vehicle_detection):
+    subject = "Traffic Violation Notice"
+    vehicle = vehicle_detection.vehicle
+    violation = vehicle_detection.violation
+    recipient_email = "w.xie1@lancaster.ac.uk" #owner_email
+
+    message = f"""
+    Dear {vehicle.owner_name},
+
+    Your vehicle ({vehicle.number_plate}) was detected at {vehicle_detection.junction} on {vehicle_detection.timestamp}.
+    
+    Violation: {violation.type}
+    Fine Amount: ${violation.fine_amount}
+
+    Regards,
+    Traffic Management
+    """
+
+    send_mail(
+        subject,
+        message,
+        settings.EMAIL_HOST_USER,
+        [recipient_email],
+        fail_silently=False
+    )
 
 def vehicle_list(request):
     query = request.GET.get("search")
