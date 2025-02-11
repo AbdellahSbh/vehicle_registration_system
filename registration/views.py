@@ -62,7 +62,7 @@ def send_violation_email(vehicle_detection):
     subject = "Traffic Violation Notice"
     vehicle = vehicle_detection.vehicle
     violation = vehicle_detection.violation
-    recipient_email = "w.xie1@lancaster.ac.uk" #owner_email
+    recipient_email = "" #owner_email
 
     message = f"""
     Dear {vehicle.owner_name},
