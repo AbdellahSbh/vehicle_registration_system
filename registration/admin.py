@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Vehicle, Junction, LicensePlateLog
+from .models import Vehicle, Junction, LicensePlateLog,Violation
 
 class VehicleAdmin(admin.ModelAdmin):
     list_display = ("number_plate", "vehicle_type", "owner_name", "owner_address")  # Columns in admin panel
@@ -16,3 +16,4 @@ class JunctionAdmin(admin.ModelAdmin):
 admin.site.register(Vehicle, VehicleAdmin)
 admin.site.register(Junction)
 admin.site.register(LicensePlateLog, LicensePlateLogAdmin)
+admin.site.register(Violation)

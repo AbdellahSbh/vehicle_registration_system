@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vehicle Simulation</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 600px;
+        }
+    </style>
+</head>
+<body class="container mt-5">
+    <h2 class="text-center">🚦 Vehicle Simulation</h2>
+    <div id="map"></div>
+    <h3 class="text-center mt-4">📜 Violation Logs</h3>
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Number Plate</th>
+                <th>Junction</th>
+                <th>Violation</th>
+                <th>Fine (€)</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="violationTable">
+            <tr>
+                <td colspan="5" class="text-center">No violations recorded yet.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        var map = L.map("map").setView([51.3397, 12.3731], 13);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "&copy; OpenStreetMap contributors"
+        }).addTo(map);
+
+        var vehicleMarkers = {};
+        var vehiclePaths = {};
+        var junctions = [
+            { name: "Downtown", lat: 51.3400, lng: 12.3745 },
+            { name: "Highway Exit", lat: 51.3420, lng: 12.3600 },
+            { name: "Airport Access", lat: 51.4250, lng: 12.2385 },
+            { name: "City Center", lat: 51.3397, lng: 12.3731 },
+            { name: "Train Station", lat: 51.3451, lng: 12.3800 },
+            { name: "Shopping District", lat: 51.3333, lng: 12.3922 },
+            { name: "University Road", lat: 51.3265, lng: 12.3478 },
+            { name: "Industrial Zone", lat: 51.3100, lng: 12.3310 }
+        ];
+
+        junctions.forEach(junction => {
+            L.marker([junction.lat, junction.lng])
+                .addTo(map)
+                .bindPopup(`<b>${junction.name}</b>`);
+        });
+
+        var carIcon = L.icon({
+            iconUrl: "https://upload.wikimedia.org/wikipedia/commons/7/7c/Car_icon_red.png",
+            iconSize: [25, 25]
+        });
+
+        function moveVehicle(vehicle) {
+            let step = 0;
+            let totalSteps = 150;  
+
+            function animate() {
+                if (step < totalSteps) {
+                    let lat = vehicle.start.lat + ((vehicle.end.lat - vehicle.start.lat) * (step / totalSteps));
+                    let lng = vehicle.start.lng + ((vehicle.end.lng - vehicle.start.lng) * (step / totalSteps));
+
+                    vehicle.marker.setLatLng([lat, lng]);
+                    vehicle.path.addLatLng([lat, lng]);
+
+                    step++;
+                    setTimeout(animate, 100);
+                } else {
+                    checkJunction(vehicle);
+                    setTimeout(() => moveToNewDestination(vehicle), 2000);
+                }
+            }
+
+            animate();
+        }
+
+        function spawnVehicle(plate, start, end) {
+            let marker = L.marker(start, { icon: carIcon }).addTo(map);
+            let path = L.polyline([start], { color: "blue" }).addTo(map);
+
+            let vehicle = { plate, marker, path, start, end };
+            vehicleMarkers[plate] = vehicle;
+
+            marker.bindPopup(`🚗 <b>${plate}</b>`).openPopup();
+            moveVehicle(vehicle);
+        }
+
+        function checkJunction(vehicle) {
+            junctions.forEach(junction => {
+                let distance = Math.sqrt(Math.pow(junction.lat - vehicle.end.lat, 2) + Math.pow(junction.lng - vehicle.end.lng, 2));
+                if (distance < 0.001) {
+                    logViolation(vehicle, junction);
+                }
+            });
+        }
+
+        function moveToNewDestination(vehicle) {
+            let newDestination = junctions[Math.floor(Math.random() * junctions.length)];
+            vehicle.start = vehicle.end;  
+            vehicle.end = { lat: newDestination.lat, lng: newDestination.lng };
+
+            vehicle.path = L.polyline([vehicle.start], { color: "blue" }).addTo(map);
+            moveVehicle(vehicle);
+        }
+
+        function logViolation(vehicle, junction) {
+            fetch("/log_violation/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    "number_plate": vehicle.plate,
+                    "junction": junction.name
+                })
+            }).then(response => response.json())
+              .then(data => updateViolationTable(vehicle.plate, junction.name, data.violation, data.fine, data.timestamp));
+        }
+
+        function updateViolationTable(plate, junction, violation, fine, timestamp) {
+            let table = document.getElementById("violationTable");
+            if (table.rows.length === 1 && table.rows[0].cells[0].innerText === "No violations recorded yet.") {
+                table.innerHTML = "";  
+            }
+
+            let row = table.insertRow();
+            row.insertCell(0).innerText = plate;
+            row.insertCell(1).innerText = junction;
+            row.insertCell(2).innerText = violation || "No Violation";
+            row.insertCell(3).innerText = `€${fine || 0}`;
+            row.insertCell(4).innerText = timestamp || new Date().toLocaleString();
+        }
+
+        function startSimulation() {
+            fetch("/get_registered_vehicles/")
+               .then(response => response.json())
+               .then(data => {
+                if (data.vehicles.length === 0) {
+                    console.warn("No registered vehicles found.");
+                    return;
+                }
+
+                for (let i = 0; i < Math.min(6, data.vehicles.length); i++) {
+                    let vehicle = data.vehicles[i];
+
+                    let start = junctions[Math.floor(Math.random() * junctions.length)];
+                    let end = junctions[Math.floor(Math.random() * junctions.length)];
+
+                    spawnVehicle(vehicle.number_plate, { lat: start.lat, lng: start.lng }, { lat: end.lat, lng: end.lng });
+                }
+            })
+            .catch(error => console.error("Error fetching vehicles:", error));
+        }
+        
+        startSimulation();
+    </script>
+
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">⬅️ Back to Dashboard</a>
+</body>
+</html>
