@@ -1,6 +1,7 @@
 import random
 import time
 from registration.models import Vehicle, Junction, LicensePlateLog, Violation
+from .views import send_violation_email
 
 def generate_unique_plate():
     """Generates a random EU-style license plate"""

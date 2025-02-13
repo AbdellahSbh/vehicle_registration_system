@@ -13,6 +13,7 @@ urlpatterns = [
     path("log_vehicle/", views.log_vehicle_violation, name="log_vehicle_violation"),
     path("log_violation/", views.log_violation, name="log_violation"),
     path("get_registered_vehicles/", views.get_registered_vehicles, name="get_registered_vehicles"),
+    path("junction_count/", views.junction_count, name="junction_count"),
 
 
 

@@ -10,7 +10,9 @@ import json
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.http import JsonResponse
-
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models import Count
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +64,9 @@ def log_plate(request):
             violation = Violation.objects.get(id=violation_id)
 
 
-            LicensePlateLog.objects.create(vehicle=vehicle, junction=junction, violation=violation)
+            vehicle_detection = LicensePlateLog.objects.create(vehicle=vehicle, junction=junction, violation=violation)
+            if violation and violation.type != "No Violation":
+                send_violation_email(vehicle_detection)
 
             return HttpResponse("✅ Plate Logged Successfully")
 
@@ -75,6 +79,32 @@ def log_plate(request):
 
     return render(request, "registration/log_plate.html", {"junctions": junctions, "violations": violations})
 
+def send_violation_email(vehicle_detection):
+    subject = "Traffic Violation Notice"
+    vehicle = vehicle_detection.vehicle
+    violation = vehicle_detection.violation
+
+    if violation.type != "No violation":
+
+        recipient_email = "" #owner_email_w.xie1@lancaster.ac.uk
+
+        message = f"""
+        Dear {vehicle.owner_name},
+        Your vehicle ({vehicle.number_plate}) was detected at {vehicle_detection.junction} on {vehicle_detection.timestamp}.
+        
+        Violation: {violation.type}
+        Fine Amount: ${violation.fine_amount}
+        Regards,
+        Traffic Management
+        """
+
+        send_mail(
+            subject,
+            message,
+            settings.EMAIL_HOST_USER,
+            [recipient_email],
+            fail_silently=False
+        )
 
 def vehicle_list(request):
     query = request.GET.get("search")
@@ -165,7 +195,10 @@ def log_violation(request):
             # Assign a violation randomly or based on a rule
             violation = Violation.objects.order_by("?").first()
 
-            LicensePlateLog.objects.create(vehicle=vehicle, junction=junction, violation=violation)
+            log_entry = LicensePlateLog.objects.create(vehicle=vehicle, junction=junction, violation=violation)
+
+            if violation and violation.type != "No Violation":
+                send_violation_email(log_entry)
 
             return JsonResponse({"status": "success", "message": f"Violation logged at {junction_name} for {number_plate}"})
         
@@ -180,3 +213,8 @@ def log_violation(request):
 def get_registered_vehicles(request):
     vehicles = list(Vehicle.objects.values("number_plate"))
     return JsonResponse({"vehicles": vehicles})
+
+def junction_count(request):
+    junction_traffic_data = LicensePlateLog.objects.values('junction__name').annotate(vehicle_count=Count('vehicle')).order_by('-vehicle_count')
+
+    return render(request, 'registration/junction_count.html', {'junction_traffic_data': junction_traffic_data})
