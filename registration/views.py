@@ -124,7 +124,7 @@ def log_vehicle_violation(request):
             vehicle = Vehicle.objects.get(number_plate=plate)
             junction = Junction.objects.get(name=junction_name)
 
-            # ✅ 50% chance of getting a violation
+            # 50% chance of getting a violation
             violation = None
             if random.choice([True, False]):
                 violation = random.choice(Violation.objects.all())
