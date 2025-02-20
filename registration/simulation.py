@@ -36,6 +36,10 @@ def simulate_junction_crossing():
         junction = random.choice(junctions)  # Pick a random junction
         log_entry = LicensePlateLog.objects.create(vehicle=vehicle, junction=junction)
 
+        if vehicle.vehicle_type == "emergency":
+            print(f"🚨 Emergency vehicle {vehicle.number_plate} passed through {junction.name}.")
+            continue
+
         if random.choice([True, False]):  # 50% chance of violation
             violation_type = random.choice(Violation.objects.all())  # Pick a random violation
             log_entry.violation = violation_type

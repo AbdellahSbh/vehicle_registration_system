@@ -58,7 +58,11 @@
         });
 
         var carIcon = L.icon({
-            iconUrl: "https://upload.wikimedia.org/wikipedia/commons/7/7c/Car_icon_red.png",
+            iconUrl: "https://banner2.cleanpng.com/20180418/bbq/avfkg8ee3.webp",
+            iconSize: [25, 25]
+        });
+        var emergencyIcon = L.icon({
+            iconUrl: "https://static-00.iconduck.com/assets.00/car-emergency-icon-1536x2048-6gnhzw7u.png",
             iconSize: [25, 25]
         });
 
@@ -85,8 +89,10 @@
             animate();
         }
 
-        function spawnVehicle(plate, start, end) {
-            let marker = L.marker(start, { icon: carIcon }).addTo(map);
+        function spawnVehicle(plate, start, end, vehicleType) {
+            console.log("Vehicle type:", vehicleType);
+            let icon = vehicleType === "emergency" ? emergencyIcon : carIcon;
+            let marker = L.marker(start, { icon: icon }).addTo(map);
             let path = L.polyline([start], { color: "blue" }).addTo(map);
 
             let vehicle = { plate, marker, path, start, end };
@@ -158,7 +164,7 @@
                     let start = junctions[Math.floor(Math.random() * junctions.length)];
                     let end = junctions[Math.floor(Math.random() * junctions.length)];
 
-                    spawnVehicle(vehicle.number_plate, { lat: start.lat, lng: start.lng }, { lat: end.lat, lng: end.lng });
+                    spawnVehicle(vehicle.number_plate, { lat: start.lat, lng: start.lng }, { lat: end.lat, lng: end.lng }, vehicle.vehicle_type);
                 }
             })
             .catch(error => console.error("Error fetching vehicles:", error));

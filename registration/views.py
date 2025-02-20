@@ -86,7 +86,7 @@ def send_violation_email(vehicle_detection):
 
     if violation.type != "No violation":
 
-        recipient_email = "" #owner_email_w.xie1@lancaster.ac.uk
+        recipient_email = "w.xie1@lancaster.ac.uk" #owner_email_(w.xie1@lancaster.ac.uk)
 
         message = f"""
         Dear {vehicle.owner_name},
@@ -105,6 +105,29 @@ def send_violation_email(vehicle_detection):
             [recipient_email],
             fail_silently=False
         )
+
+def send_emergency_email(vehicle_detection):
+    subject = "Traffic Enmergency Notice"
+    vehicle = vehicle_detection.vehicle
+
+    recipient_email = "w.xie1@lancaster.ac.uk" #owner_email_(w.xie1@lancaster.ac.uk)
+
+    message = f"""
+    Dear driver,
+
+    This is an automated alert to inform you that an emergency vehicle has passed through the {vehicle_detection.junction} on {vehicle_detection.timestamp}.
+    
+    Regards,
+    Traffic Management
+    """
+
+    send_mail(
+        subject,
+        message,
+        settings.EMAIL_HOST_USER,
+        [recipient_email],
+        fail_silently=False
+    )
 
 def vehicle_list(request):
     query = request.GET.get("search")
@@ -192,6 +215,13 @@ def log_violation(request):
             vehicle = Vehicle.objects.get(number_plate=number_plate)
             junction = Junction.objects.get(name=junction_name)
             
+            if vehicle.vehicle_type == "emergency":
+                log_entry = LicensePlateLog.objects.create(vehicle=vehicle, junction=junction)
+                send_emergency_email(log_entry)
+                return JsonResponse({
+                    "status": "success","message": f"🚨 Emergency vehicle {vehicle.number_plate} passed through {junction.name}"
+                })
+
             # Assign a violation randomly or based on a rule
             violation = Violation.objects.order_by("?").first()
 
@@ -211,7 +241,7 @@ def log_violation(request):
 
 
 def get_registered_vehicles(request):
-    vehicles = list(Vehicle.objects.values("number_plate"))
+    vehicles = list(Vehicle.objects.values("number_plate", "vehicle_type"))
     return JsonResponse({"vehicles": vehicles})
 
 def junction_count(request):
