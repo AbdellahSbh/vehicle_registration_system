@@ -1,0 +1,23 @@
+services:
+  db:
+      image: postgres
+      environment:
+        POSTGRES_USER: xie
+        POSTGRES_PASSWORD: 111
+        POSTGRES_DB: vehicleregistration_db
+      ports:
+        - "5432:5432"
+      healthcheck:
+        test: ["CMD", "pg_isready", "-U", "xie"]
+        interval: 5s
+        timeout: 5s
+        retries: 5
+
+
+  backend_django:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
