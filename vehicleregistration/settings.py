@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-4w==t-pe2x_3+8$_fi0d$j628mq-%#)40e98@l1p$sv$it7a5h
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -80,8 +80,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'vehicleregistration_db',
         'USER': 'xie',
-        'PASSWORD': '',
-        'HOST': 'localhost',
+        'PASSWORD': '111',
+        'HOST': 'db',
         'PORT': '5432',
     }
 }
